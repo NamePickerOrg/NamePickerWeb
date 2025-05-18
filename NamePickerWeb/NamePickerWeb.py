@@ -2,12 +2,13 @@
 
 import reflex as rx
 import random
+import os
 from typing import List
 
 from rxconfig import config
 
 class Choose:
-    def __init__(self,sexFavor:str,numFavor:str,allowRepeat:bool):
+    def __init__(self,sexFavor:str,numFavor:str,allowRepeat:bool,path:str):
         self.names = {}
         self.sexlen = [0,0,0]
         self.sexl = [[],[],[]]
@@ -17,7 +18,7 @@ class Choose:
         self.sexFavor = sexFavor
         self.numFavor = numFavor
         self.allowRepeat = allowRepeat
-        self.loadname()
+        self.loadname(path)
 
     def pick(self):
         if self.sexFavor != "都抽":
@@ -84,11 +85,11 @@ class Choose:
         # for i in plugin.keys():
         #     plugin[i].afterPick(namet)
 
-    def loadname(self):
+    def loadname(self,path:str):
         try:
             # name = pd.read_csv("names.csv", sep=",", header=0)
             # name = name.to_dict()
-            with open("names.csv","r",encoding="utf-8") as f:
+            with open(path,"r",encoding="utf-8") as f:
                 nl = f.readlines()
                 ns = []
                 head = nl[0].strip("\n").split(",")
@@ -128,12 +129,12 @@ class Choose:
             self.numlen[0] = len(self.numl[0])
             self.numlen[1] = len(self.numl[1])
         except FileNotFoundError:
-            with open("names.csv","w",encoding="utf-8") as f:
+            with open(path,"w",encoding="utf-8") as f:
                 st  = ["name,sex,no\n","example,0,1"]
                 f.writelines(st)
             self.loadname()
 
-core = Choose("都抽","都抽",False)
+core = Choose("都抽","都抽",False,"names/%s"%os.listdir("names")[0])
 class State(rx.State):
     names: List[str] = [
         "example(0)"
@@ -141,10 +142,12 @@ class State(rx.State):
 
     svl: List[str] = ["都抽","只抽男","只抽女","只抽特殊性别"]
     nvl: List[str] = ["都抽","只抽单数","只抽双数"]
+    pl : List[str] = os.listdir("names")
     sv : str = "都抽"
     nv : str = "都抽"
     count: int = 1
     arp : bool = False
+    path : str = "测试1班.csv"
 
     @rx.event
     def choose(self):
@@ -177,6 +180,11 @@ class State(rx.State):
     def arpc(self, checked: bool):
         self.arp = checked
 
+    @rx.event
+    def setp(self,value:str):
+        self.path = value
+        core.loadname("names/%s"%self.path)
+
 
 def namebox(name:str):
     return rx.box(
@@ -206,6 +214,17 @@ def index() -> rx.Component:
                 "点击抽选",
                 on_click=State.choose,
                 radius="large"
+            ),
+            rx.flex(
+                rx.text("选择名单文件"),
+                rx.select(
+                    State.pl,
+                    value=State.path,
+                    on_change=State.setp,
+                    radius="large"
+                ),
+                spacing="9",
+                width="100%"
             ),
             rx.flex(
                 rx.text("输入抽选数量"),
