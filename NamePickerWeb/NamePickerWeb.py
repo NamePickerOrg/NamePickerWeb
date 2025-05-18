@@ -3,6 +3,7 @@
 import reflex as rx
 import random
 import os
+import json
 from typing import List
 
 from rxconfig import config
@@ -134,7 +135,51 @@ class Choose:
                 f.writelines(st)
             self.loadname()
 
+class UserManage:
+    def __init__(self):
+        with open("user.json","r",encoding="utf-8") as f:
+            self.users = json.loads(f.read())
+        with open("priv.json","r",encoding="utf-8") as f:
+            self.priv = json.loads(f.read())
+
+    def save(self):
+        with open("user.json","w",encoding="utf-8") as f:
+            f.write(json.dumps(self.users))
+        with open("priv.json","w",encoding="utf-8") as f:
+            f.write(json.dumps(self.priv))
+    
+    def getUser(self,uid:str,key:str):
+        return self.users[uid][key]
+    
+    def editUser(self,uid:str,key:str,target):
+        self.users[uid][key] = target
+        self.save()
+
+    def delUser(self,uid:str):
+        del self.users[uid]
+        self.save()
+    
+    def getUserPriv(self,uid:str,key:str):
+        return self.priv[self.users[uid]["priv"]][key]
+    
+    def addPriv(self,pid:str,disp:str,desc:str,level:int,allowed:list):
+        self.priv[pid]={"disp":disp,"desc":desc,"level":level,"allowed":allowed}
+        self.save()
+    
+    def getPriv(self,pid:str,key:str):
+        return self.priv[pid][key]
+    
+    def editPriv(self,pid:str,key:str,target):
+        self.priv[pid][key] = target
+        self.save()
+
+    def delPriv(self,pid:str):
+        del self.priv[pid]
+        self.save()
+
 core = Choose("都抽","都抽",False,"names/%s"%os.listdir("names")[0])
+um = UserManage()
+
 class State(rx.State):
     names: List[str] = [
         "example(0)"
@@ -148,6 +193,9 @@ class State(rx.State):
     count: int = 1
     arp : bool = False
     path : str = "测试1班.csv"
+    session : str = "guest"
+    sessionDt : dict = um.users[session]
+    sessionPriv : dict = um.priv[um.users[session]["priv"]]
 
     @rx.event
     def choose(self):
@@ -185,7 +233,77 @@ class State(rx.State):
         self.path = value
         core.loadname("names/%s"%self.path)
 
+    @rx.event
+    def verify(self,form:dict):
+        if form["username"] in um.users.keys():
+            if um.getUser(form["username"],"password") == form["password"]:
+                self.session = form["username"]
+                self.sessionDt = um.users[self.session]
+                self.sessionPriv = um.priv[um.users[self.session]["priv"]]
+            else:
+                rx.window_alert("Wrong passwd")
+        else:
+            rx.window_alert("Wrong user")
+        print(self.session)
 
+
+def login(trigger):
+    return rx.dialog.root(
+        rx.dialog.trigger(trigger),
+        rx.dialog.content(
+            rx.dialog.title("登录NamePicker Web"),
+            rx.dialog.description(
+                "登录以使用更多功能",
+                size="2",
+                margin_bottom="16px",
+            ),
+            rx.form(
+                rx.flex(
+                    rx.text(
+                        "用户名",
+                        as_="div",
+                        size="2",
+                        margin_bottom="4px",
+                        weight="bold",
+                    ),
+                    rx.input(
+                        placeholder="输入用户名",
+                        name="username"
+                    ),
+                    rx.text(
+                        "密码",
+                        as_="div",
+                        size="2",
+                        margin_bottom="4px",
+                        weight="bold",
+                    ),
+                    rx.input(
+                        placeholder="输入密码",
+                        name="password"
+                    ),
+                    direction="column",
+                    spacing="3",
+                ),
+                rx.flex(
+                    rx.dialog.close(
+                        rx.button(
+                            "取消",
+                            color_scheme="gray",
+                            variant="soft",
+                        ),
+                    ),
+                    rx.dialog.close(
+                        rx.button("登录",type="submit"),
+                    ),
+                    spacing="3",
+                    margin_top="16px",
+                    justify="end",
+                ),
+                on_submit=State.verify,
+                reset_on_submit=True,
+            ),
+        ),
+    )
 def namebox(name:str):
     return rx.box(
         name,
@@ -285,6 +403,7 @@ def index() -> rx.Component:
     )
 
 def mgmt() -> rx.Component:
+    global um,session
     return rx.container(
         rx.color_mode.button(position="top-right"),
         rx.vstack(
@@ -295,32 +414,29 @@ def mgmt() -> rx.Component:
             min_height="20vh",
         ),
         rx.flex(
+            login(rx.button("登录")),
             rx.flex(
                 rx.text("当前用户信息"),
                 rx.card(
                     rx.data_list.root(
                         rx.data_list.item(
                             rx.data_list.label("昵称"),
-                            rx.data_list.value("灵魂歌手er"),
+                            rx.data_list.value(State.sessionDt["nick"]),
                         ),
                         rx.data_list.item(
                             rx.data_list.label("用户名"),
-                            rx.data_list.value("lhgser"),
+                            rx.data_list.value(State.session),
                         ),
                         rx.data_list.item(
                             rx.data_list.label("权限"),
                             rx.data_list.value(
                                 rx.badge(
-                                    "管理员",
+                                    State.sessionPriv["disp"],
                                     variant="soft",
                                     radius="large",
                                 )
                             ),
                             align="center",
-                        ),
-                        rx.data_list.item(
-                            rx.data_list.label("UID"),
-                            rx.data_list.value(rx.code("1")),
                         ),
                     ),
                 ),
