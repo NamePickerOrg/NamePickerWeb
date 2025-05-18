@@ -1,0 +1,30 @@
+{
+    "guest":{
+        "nick":"尚未登陆",
+        "name":"guest",
+        "priv":"guest",
+        "password":"",
+        "blocked":false
+    },
+    "0":{
+        "nick":"ROOT",
+        "name":"root",
+        "priv":"ROOT",
+        "password":"",
+        "blocked":false
+    },
+    "1":{
+        "nick":"灵魂歌手er",
+        "name":"lhgser",
+        "priv":"admin",
+        "password":"",
+        "blocked":false
+    },
+    "100000001":{
+        "nick":"用户",
+        "name":"user",
+        "priv":"user",
+        "password":"",
+        "blocked":true
+    }
+}

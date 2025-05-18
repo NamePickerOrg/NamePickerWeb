@@ -284,6 +284,54 @@ def index() -> rx.Component:
         rx.logo(),
     )
 
-
+def mgmt() -> rx.Component:
+    return rx.container(
+        rx.color_mode.button(position="top-right"),
+        rx.vstack(
+            rx.heading("NamePicker Web - 管理面板", size="9"),
+            rx.text("在此处管理NamePicker Web的行为"),
+            spacing="5",
+            justify="center",
+            min_height="20vh",
+        ),
+        rx.flex(
+            rx.flex(
+                rx.text("当前用户信息"),
+                rx.card(
+                    rx.data_list.root(
+                        rx.data_list.item(
+                            rx.data_list.label("昵称"),
+                            rx.data_list.value("灵魂歌手er"),
+                        ),
+                        rx.data_list.item(
+                            rx.data_list.label("用户名"),
+                            rx.data_list.value("lhgser"),
+                        ),
+                        rx.data_list.item(
+                            rx.data_list.label("权限"),
+                            rx.data_list.value(
+                                rx.badge(
+                                    "管理员",
+                                    variant="soft",
+                                    radius="large",
+                                )
+                            ),
+                            align="center",
+                        ),
+                        rx.data_list.item(
+                            rx.data_list.label("UID"),
+                            rx.data_list.value(rx.code("1")),
+                        ),
+                    ),
+                ),
+                spacing="9",
+                width="100%"
+            ),
+            spacing="5",
+            direction="column",
+        ),
+        rx.logo()
+    )
 app = rx.App()
-app.add_page(index)
+app.add_page(index,title="NamePicker Web")
+app.add_page(mgmt,title="NamePicker Web 管理面板")
